@@ -1,0 +1,17 @@
+.gradle/
+.idea/
+*.iml
+local.properties
+build/
+.DS_Store
+
+app/build/
+app/google-services.json
+captures/
+
+functions/lib/
+functions/node_modules/
+functions/.runtimeconfig.json
+functions/.env
+functions/.env.*
+functions/firebase-debug.log
