@@ -1,0 +1,2 @@
+-keep class com.google.firebase.** { *; }
+-keep class com.santi.metamediasaver.data.model.** { *; }

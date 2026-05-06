@@ -1,6 +1,7 @@
 # Gradle files
 .gradle/
 build/
+.DS_Store
 
 # Local configuration file (sdk path, etc)
 local.properties
@@ -9,6 +10,8 @@ local.properties
 *.log
 
 # Android Studio generated files and folders
+app/build/
+app/google-services.json
 captures/
 .externalNativeBuild/
 .cxx/
@@ -32,3 +35,10 @@ google-services.json
 
 # Android Profiling
 *.hprof
+
+functions/lib/
+functions/node_modules/
+functions/.runtimeconfig.json
+functions/.env
+functions/.env.*
+functions/firebase-debug.log
