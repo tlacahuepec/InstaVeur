@@ -63,12 +63,17 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import coil.compose.AsyncImage
+import com.santi.metamediasaver.data.model.AuthUser
+import com.santi.metamediasaver.data.model.ConnectedAccount
 import com.santi.metamediasaver.data.model.DownloadRecord
 import com.santi.metamediasaver.data.model.DownloadState
 import com.santi.metamediasaver.data.model.MediaItem
 import com.santi.metamediasaver.data.model.MediaType
+import com.santi.metamediasaver.data.model.SourceType
+import com.santi.metamediasaver.ui.theme.MetaMediaSaverTheme
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -500,3 +505,109 @@ private fun needsLegacyWritePermission(context: Context): Boolean =
     Build.VERSION.SDK_INT <= Build.VERSION_CODES.P &&
         context.checkSelfPermission(Manifest.permission.WRITE_EXTERNAL_STORAGE) !=
         PackageManager.PERMISSION_GRANTED
+
+@Preview(showBackground = true, name = "Home - Empty")
+@Composable
+private fun HomeScreenEmptyPreview() {
+    MetaMediaSaverTheme {
+        HomeScreen(
+            state = previewHomeState(),
+            onConnect = {},
+            onRefreshAccounts = {},
+            onRefreshMedia = {},
+            onSelectAccount = {},
+            onDisconnect = {},
+            onLoadMore = {},
+            onDownload = {},
+            onRetryDownload = {},
+            onCancelDownload = {},
+            onSignOut = {}
+        )
+    }
+}
+
+@Preview(showBackground = true, name = "Home - Content")
+@Composable
+private fun HomeScreenContentPreview() {
+    MetaMediaSaverTheme {
+        HomeScreen(
+            state = previewHomeState(hasMedia = true, hasDownloads = true),
+            onConnect = {},
+            onRefreshAccounts = {},
+            onRefreshMedia = {},
+            onSelectAccount = {},
+            onDisconnect = {},
+            onLoadMore = {},
+            onDownload = {},
+            onRetryDownload = {},
+            onCancelDownload = {},
+            onSignOut = {}
+        )
+    }
+}
+
+private fun previewHomeState(
+    hasMedia: Boolean = false,
+    hasDownloads: Boolean = false
+): HomeUiState {
+    val accounts = listOf(
+        ConnectedAccount(
+            id = "account_1",
+            displayName = "Preview Account",
+            username = "preview_user",
+            sourceType = SourceType.INSTAGRAM,
+            avatarUrl = null
+        )
+    )
+    return HomeUiState(
+        user = AuthUser(uid = "preview_uid", email = "preview@example.com", username = "preview"),
+        accounts = accounts,
+        selectedAccountId = accounts.first().id,
+        media = if (hasMedia) {
+            listOf(
+                MediaItem(
+                    id = "media_1",
+                    accountId = accounts.first().id,
+                    caption = "Sunset at the beach",
+                    mediaType = MediaType.IMAGE,
+                    mediaUrl = "https://example.com/full.jpg",
+                    thumbnailUrl = "https://example.com/thumb.jpg",
+                    permalink = null,
+                    sourceType = SourceType.INSTAGRAM,
+                    timestamp = "2026-04-18T10:00:00Z"
+                ),
+                MediaItem(
+                    id = "media_2",
+                    accountId = accounts.first().id,
+                    caption = "Short reel",
+                    mediaType = MediaType.VIDEO,
+                    mediaUrl = "https://example.com/video.mp4",
+                    thumbnailUrl = null,
+                    permalink = null,
+                    sourceType = SourceType.INSTAGRAM,
+                    timestamp = "2026-04-18T12:00:00Z"
+                )
+            )
+        } else {
+            emptyList()
+        },
+        nextCursor = if (hasMedia) "next_page" else null,
+        downloads = if (hasDownloads) {
+            listOf(
+                DownloadRecord(
+                    workId = "work_1",
+                    mediaId = "media_1",
+                    title = "Sunset at the beach",
+                    state = DownloadState.RUNNING,
+                    progress = 45,
+                    localUri = null,
+                    error = null,
+                    retryUrl = null,
+                    retryMediaType = MediaType.IMAGE
+                )
+            )
+        } else {
+            emptyList()
+        }
+    )
+}

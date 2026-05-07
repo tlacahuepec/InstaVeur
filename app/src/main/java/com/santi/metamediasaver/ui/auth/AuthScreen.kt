@@ -27,6 +27,7 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
@@ -34,6 +35,7 @@ import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
+import com.santi.metamediasaver.ui.theme.MetaMediaSaverTheme
 
 @Composable
 fun AuthScreen(
@@ -151,5 +153,41 @@ fun AuthScreen(
                 }
             }
         }
+    }
+}
+
+@Preview(showBackground = true, name = "Sign In")
+@Composable
+private fun AuthScreenSignInPreview() {
+    MetaMediaSaverTheme {
+        AuthScreen(
+            state = AuthUiState(
+                email = "preview@example.com"
+            ),
+            onEmailChange = {},
+            onPasswordChange = {},
+            onUsernameChange = {},
+            onModeChange = {},
+            onSubmit = {}
+        )
+    }
+}
+
+@Preview(showBackground = true, name = "Create Account")
+@Composable
+private fun AuthScreenCreatePreview() {
+    MetaMediaSaverTheme {
+        AuthScreen(
+            state = AuthUiState(
+                email = "preview@example.com",
+                username = "preview_user",
+                createMode = true
+            ),
+            onEmailChange = {},
+            onPasswordChange = {},
+            onUsernameChange = {},
+            onModeChange = {},
+            onSubmit = {}
+        )
     }
 }
