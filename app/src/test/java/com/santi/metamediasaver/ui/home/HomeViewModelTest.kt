@@ -14,11 +14,13 @@ import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.awaitCancellation
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.emptyFlow
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.resetMain
 import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.test.setMain
+import kotlinx.coroutines.withTimeout
 import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
@@ -120,6 +122,43 @@ class HomeViewModelTest {
         assertEquals(null, viewModel.state.value.nextCursor)
     }
 
+    @Test
+    fun start_connection_emits_open_url() = runTest {
+        val repo = FakeMetaRepository(startConnectionUrl = "https://example.com/oauth")
+        val viewModel = HomeViewModel(user(), repo, FakeDownloadRepository())
+
+        viewModel.startConnection()
+        advanceUntilIdle()
+
+        val event = withTimeout(1_000) { viewModel.events.first() }
+        assertEquals(HomeEvent.OpenAuthorizationUrl("https://example.com/oauth"), event)
+        assertEquals(false, viewModel.state.value.isConnecting)
+    }
+
+    @Test
+    fun finish_connection_with_error_emits_message() = runTest {
+        val viewModel = HomeViewModel(user(), FakeMetaRepository(), FakeDownloadRepository())
+
+        viewModel.finishConnection(android.net.Uri.parse("instaveur://oauth?error=denied"))
+        advanceUntilIdle()
+
+        val event = withTimeout(1_000) { viewModel.events.first() }
+        assertEquals(HomeEvent.Message("denied"), event)
+    }
+
+    @Test
+    fun disconnect_selected_triggers_reload() = runTest {
+        val repo = FakeMetaRepository(accounts = listOf(account("a"), account("b")))
+        val viewModel = HomeViewModel(user(), repo, FakeDownloadRepository())
+        advanceUntilIdle()
+
+        viewModel.disconnectSelected()
+        advanceUntilIdle()
+
+        assertEquals(listOf("a"), repo.disconnectCalls)
+        assertEquals(2, repo.listConnectedAccountsCalls)
+    }
+
     private fun user() = AuthUser("uid", "user@example.com", "user")
 
     private fun account(id: String) = ConnectedAccount(
@@ -147,16 +186,22 @@ class HomeViewModelTest {
 
 private class FakeMetaRepository(
     private val accounts: List<ConnectedAccount> = emptyList(),
-    private val mediaPages: Map<String, MutableMap<String?, PagedMedia>> = emptyMap()
+    private val mediaPages: Map<String, MutableMap<String?, PagedMedia>> = emptyMap(),
+    private val startConnectionUrl: String = "https://example.com/connect"
 ) : MetaRepository {
     var blockListMedia: Boolean = false
     val listMediaCalls = mutableListOf<Pair<String, String?>>()
+    val disconnectCalls = mutableListOf<String>()
+    var listConnectedAccountsCalls: Int = 0
 
-    override suspend fun startConnection(): String = "https://example.com/connect"
+    override suspend fun startConnection(): String = startConnectionUrl
 
     override suspend fun finishConnection(code: String, state: String): List<ConnectedAccount> = accounts
 
-    override suspend fun listConnectedAccounts(): List<ConnectedAccount> = accounts
+    override suspend fun listConnectedAccounts(): List<ConnectedAccount> {
+        listConnectedAccountsCalls += 1
+        return accounts
+    }
 
     override suspend fun listMedia(accountId: String, cursor: String?): PagedMedia {
         listMediaCalls += accountId to cursor
@@ -168,7 +213,9 @@ private class FakeMetaRepository(
 
     override suspend fun refreshMediaUrl(mediaId: String): String? = null
 
-    override suspend fun disconnectMeta(accountId: String) = Unit
+    override suspend fun disconnectMeta(accountId: String) {
+        disconnectCalls += accountId
+    }
 }
 
 private class FakeDownloadRepository : DownloadRepository {
