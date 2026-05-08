@@ -3,6 +3,7 @@ package com.santi.metamediasaver.data.download
 import android.content.Context
 import android.os.Handler
 import android.os.Looper
+import androidx.lifecycle.LiveData
 import androidx.lifecycle.Observer
 import androidx.work.Constraints
 import androidx.work.Data
@@ -28,14 +29,16 @@ interface DownloadRepository {
     suspend fun cancel(workId: String)
 }
 
-class WorkManagerDownloadRepository(
-    context: Context
+class WorkManagerDownloadRepository internal constructor(
+    private val scheduler: WorkScheduler
 ) : DownloadRepository {
-    private val workManager = WorkManager.getInstance(context.applicationContext)
+    constructor(context: Context) : this(
+        WorkManagerScheduler(WorkManager.getInstance(context.applicationContext))
+    )
 
     override fun observeDownloads(): Flow<List<DownloadRecord>> =
         callbackFlow {
-            val liveData = workManager.getWorkInfosByTagLiveData(MediaDownloadWorker.DOWNLOAD_TAG)
+            val liveData = scheduler.getWorkInfosByTagLiveData(MediaDownloadWorker.DOWNLOAD_TAG)
             val observer = Observer<List<WorkInfo>> { infos ->
                 trySend(
                     infos.map { it.toDownloadRecord() }
@@ -58,7 +61,7 @@ class WorkManagerDownloadRepository(
             fileName = DownloadFileNamer.suggestedFileName(item)
         )
 
-        workManager.enqueueUniqueWork(
+        scheduler.enqueueUniqueWork(
             "download-${item.id}",
             ExistingWorkPolicy.REPLACE,
             request
@@ -75,7 +78,7 @@ class WorkManagerDownloadRepository(
             fileName = "${record.title}.${record.retryMediaType.extension}"
         )
 
-        workManager.enqueueUniqueWork(
+        scheduler.enqueueUniqueWork(
             "download-${record.mediaId}",
             ExistingWorkPolicy.REPLACE,
             request
@@ -84,7 +87,7 @@ class WorkManagerDownloadRepository(
     }
 
     override suspend fun cancel(workId: String) {
-        workManager.cancelWorkById(UUID.fromString(workId))
+        scheduler.cancelWorkById(UUID.fromString(workId))
     }
 
     private fun requestBuilder(
@@ -158,5 +161,29 @@ class WorkManagerDownloadRepository(
         WorkInfo.State.SUCCEEDED -> DownloadState.SUCCEEDED
         WorkInfo.State.FAILED -> DownloadState.FAILED
         WorkInfo.State.CANCELLED -> DownloadState.CANCELLED
+    }
+}
+
+internal interface WorkScheduler {
+    fun getWorkInfosByTagLiveData(tag: String): LiveData<List<WorkInfo>>
+    fun enqueueUniqueWork(name: String, policy: ExistingWorkPolicy, request: OneTimeWorkRequest)
+    fun cancelWorkById(id: UUID)
+}
+
+private class WorkManagerScheduler(
+    private val workManager: WorkManager
+) : WorkScheduler {
+    override fun getWorkInfosByTagLiveData(tag: String) = workManager.getWorkInfosByTagLiveData(tag)
+
+    override fun enqueueUniqueWork(
+        name: String,
+        policy: ExistingWorkPolicy,
+        request: OneTimeWorkRequest
+    ) {
+        workManager.enqueueUniqueWork(name, policy, request)
+    }
+
+    override fun cancelWorkById(id: UUID) {
+        workManager.cancelWorkById(id)
     }
 }
