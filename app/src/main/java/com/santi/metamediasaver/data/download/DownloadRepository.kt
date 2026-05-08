@@ -30,7 +30,7 @@ interface DownloadRepository {
 }
 
 class WorkManagerDownloadRepository internal constructor(
-    private val scheduler: DownloadWorkScheduler
+    private val scheduler: WorkScheduler
 ) : DownloadRepository {
     constructor(context: Context) : this(
         scheduler = WorkManagerScheduler(WorkManager.getInstance(context.applicationContext))
@@ -164,7 +164,7 @@ class WorkManagerDownloadRepository internal constructor(
     }
 }
 
-internal interface DownloadWorkScheduler {
+internal interface WorkScheduler {
     fun getWorkInfosByTagLiveData(tag: String): LiveData<List<WorkInfo>>
     fun enqueueUniqueWork(name: String, policy: ExistingWorkPolicy, request: OneTimeWorkRequest)
     fun cancelWorkById(id: UUID)
@@ -172,7 +172,7 @@ internal interface DownloadWorkScheduler {
 
 private class WorkManagerScheduler(
     private val workManager: WorkManager
-) : DownloadWorkScheduler {
+) : WorkScheduler {
     override fun getWorkInfosByTagLiveData(tag: String) = workManager.getWorkInfosByTagLiveData(tag)
 
     override fun enqueueUniqueWork(

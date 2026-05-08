@@ -113,7 +113,7 @@ class WorkManagerDownloadRepositoryTest {
     )
 }
 
-private class FakeDownloadWorkScheduler : DownloadWorkScheduler {
+private class FakeDownloadWorkScheduler : WorkScheduler {
     data class EnqueuedWork(
         val name: String,
         val policy: ExistingWorkPolicy,
