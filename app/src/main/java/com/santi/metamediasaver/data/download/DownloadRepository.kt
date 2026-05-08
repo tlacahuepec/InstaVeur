@@ -33,7 +33,7 @@ class WorkManagerDownloadRepository internal constructor(
     private val scheduler: WorkScheduler
 ) : DownloadRepository {
     constructor(context: Context) : this(
-        WorkManagerScheduler(WorkManager.getInstance(context.applicationContext))
+        scheduler = WorkManagerScheduler(WorkManager.getInstance(context.applicationContext))
     )
 
     override fun observeDownloads(): Flow<List<DownloadRecord>> =
