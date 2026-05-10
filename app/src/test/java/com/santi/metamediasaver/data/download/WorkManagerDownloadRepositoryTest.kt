@@ -13,9 +13,9 @@ import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertNull
+import org.junit.Assert.assertThrows
 import org.junit.Test
 import java.util.UUID
-import kotlin.test.assertFailsWith
 
 class WorkManagerDownloadRepositoryTest {
     @Test
@@ -93,9 +93,10 @@ class WorkManagerDownloadRepositoryTest {
     fun enqueue_without_media_url_throws() = runTest {
         val scheduler = FakeDownloadWorkScheduler()
         val repository = WorkManagerDownloadRepository(scheduler)
+        val item = validMediaItem().copy(mediaUrl = null)
 
-        assertFailsWith<IllegalStateException> {
-            repository.enqueue(validMediaItem().copy(mediaUrl = null))
+        assertThrows(IllegalStateException::class.java) {
+            kotlinx.coroutines.runBlocking { repository.enqueue(item) }
         }
         assertEquals(0, scheduler.enqueued.size)
     }
