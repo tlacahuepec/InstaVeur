@@ -3,6 +3,8 @@ package com.santi.metamediasaver.ui.home
 import android.net.Uri
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.santi.metamediasaver.data.auth.OAuthRedirect
+import com.santi.metamediasaver.data.auth.OAuthRedirectParser
 import com.santi.metamediasaver.data.download.DownloadRepository
 import com.santi.metamediasaver.data.meta.MetaRepository
 import com.santi.metamediasaver.data.model.AuthUser
@@ -188,19 +190,22 @@ class HomeViewModel(
     }
 
     fun finishConnection(uri: Uri) {
-        val error = uri.getQueryParameter("error_description")
-            ?: uri.getQueryParameter("error")
-        if (!error.isNullOrBlank()) {
-            viewModelScope.launch { _events.emit(HomeEvent.Message(error)) }
-            return
-        }
+        finishConnection(uri.toString())
+    }
 
-        val code = uri.getQueryParameter("code")
-        val stateParam = uri.getQueryParameter("state")
-        if (code.isNullOrBlank() || stateParam.isNullOrBlank()) {
-            return
+    fun finishConnection(uriString: String) {
+        when (val parsed = OAuthRedirectParser.parse(uriString)) {
+            is OAuthRedirect.Error -> {
+                viewModelScope.launch { _events.emit(HomeEvent.Message(parsed.message)) }
+            }
+            OAuthRedirect.Malformed -> {
+                // Ignore: redirects without code+state aren't actionable.
+            }
+            is OAuthRedirect.Success -> finishConnection(parsed.code, parsed.state)
         }
+    }
 
+    private fun finishConnection(code: String, stateParam: String) {
         viewModelScope.launch {
             _state.update { it.copy(isConnecting = true, error = null) }
             runCatching { metaRepository.finishConnection(code, stateParam) }

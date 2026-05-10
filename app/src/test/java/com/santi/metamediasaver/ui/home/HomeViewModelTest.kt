@@ -9,18 +9,22 @@ import com.santi.metamediasaver.data.model.MediaItem
 import com.santi.metamediasaver.data.model.MediaType
 import com.santi.metamediasaver.data.model.PagedMedia
 import com.santi.metamediasaver.data.model.SourceType
+import kotlinx.coroutines.CoroutineStart
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.awaitCancellation
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.emptyFlow
-import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.toList
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.StandardTestDispatcher
+import kotlinx.coroutines.test.TestScope
+import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.resetMain
+import kotlinx.coroutines.test.runCurrent
 import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.test.setMain
-import kotlinx.coroutines.withTimeout
 import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
@@ -91,6 +95,9 @@ class HomeViewModelTest {
 
         repo.blockListMedia = true
         viewModel.loadMore()
+        // Let the first launch run far enough to flip isLoadingMore=true so the
+        // second loadMore() short-circuits via the guard.
+        runCurrent()
         viewModel.loadMore()
         advanceUntilIdle()
 
@@ -126,24 +133,73 @@ class HomeViewModelTest {
     fun start_connection_emits_open_url() = runTest {
         val repo = FakeMetaRepository(startConnectionUrl = "https://example.com/oauth")
         val viewModel = HomeViewModel(user(), repo, FakeDownloadRepository())
+        val received = collectEvents(viewModel)
 
         viewModel.startConnection()
         advanceUntilIdle()
 
-        val event = withTimeout(1_000) { viewModel.events.first() }
-        assertEquals(HomeEvent.OpenAuthorizationUrl("https://example.com/oauth"), event)
+        assertEquals(
+            listOf<HomeEvent>(HomeEvent.OpenAuthorizationUrl("https://example.com/oauth")),
+            received
+        )
         assertEquals(false, viewModel.state.value.isConnecting)
     }
 
     @Test
     fun finish_connection_with_error_emits_message() = runTest {
         val viewModel = HomeViewModel(user(), FakeMetaRepository(), FakeDownloadRepository())
+        val received = collectEvents(viewModel)
 
-        viewModel.finishConnection(android.net.Uri.parse("instaveur://oauth?error=denied"))
+        viewModel.finishConnection("instaveur://oauth?error=denied")
         advanceUntilIdle()
 
-        val event = withTimeout(1_000) { viewModel.events.first() }
-        assertEquals(HomeEvent.Message("denied"), event)
+        assertEquals(listOf<HomeEvent>(HomeEvent.Message("denied")), received)
+    }
+
+    @Test
+    fun finish_connection_success_redirect_invokes_repository() = runTest {
+        val repo = FakeMetaRepository(accounts = listOf(account("a")))
+        val viewModel = HomeViewModel(user(), repo, FakeDownloadRepository())
+        advanceUntilIdle()
+        repo.listConnectedAccountsCalls = 0
+        val received = collectEvents(viewModel)
+
+        viewModel.finishConnection("metamediasaver://oauth/meta?code=abc&state=xyz")
+        advanceUntilIdle()
+
+        assertEquals(listOf("abc" to "xyz"), repo.finishConnectionCalls)
+        assertTrue(received.contains(HomeEvent.Message("Meta account connected.")))
+        assertEquals("a", viewModel.state.value.selectedAccountId)
+    }
+
+    @Test
+    fun finish_connection_user_denied_uses_error_description() = runTest {
+        val repo = FakeMetaRepository()
+        val viewModel = HomeViewModel(user(), repo, FakeDownloadRepository())
+        val received = collectEvents(viewModel)
+
+        viewModel.finishConnection(
+            "metamediasaver://oauth/meta?error=access_denied&error_description=User+denied"
+        )
+        advanceUntilIdle()
+
+        assertEquals(listOf<HomeEvent>(HomeEvent.Message("User denied")), received)
+        assertTrue(repo.finishConnectionCalls.isEmpty())
+    }
+
+    @Test
+    fun finish_connection_malformed_missing_code_is_ignored() = runTest {
+        val repo = FakeMetaRepository()
+        val viewModel = HomeViewModel(user(), repo, FakeDownloadRepository())
+        val received = collectEvents(viewModel)
+
+        viewModel.finishConnection("metamediasaver://oauth/meta?state=xyz")
+        advanceUntilIdle()
+
+        assertTrue(repo.finishConnectionCalls.isEmpty())
+        assertTrue(received.isEmpty())
+        assertEquals(null, viewModel.state.value.error)
+        assertEquals(false, viewModel.state.value.isConnecting)
     }
 
     @Test
@@ -157,6 +213,17 @@ class HomeViewModelTest {
 
         assertEquals(listOf("a"), repo.disconnectCalls)
         assertEquals(2, repo.listConnectedAccountsCalls)
+    }
+
+    private fun TestScope.collectEvents(viewModel: HomeViewModel): MutableList<HomeEvent> {
+        val received = mutableListOf<HomeEvent>()
+        backgroundScope.launch(
+            UnconfinedTestDispatcher(testScheduler),
+            start = CoroutineStart.UNDISPATCHED
+        ) {
+            viewModel.events.toList(received)
+        }
+        return received
     }
 
     private fun user() = AuthUser("uid", "user@example.com", "user")
@@ -192,11 +259,15 @@ private class FakeMetaRepository(
     var blockListMedia: Boolean = false
     val listMediaCalls = mutableListOf<Pair<String, String?>>()
     val disconnectCalls = mutableListOf<String>()
+    val finishConnectionCalls = mutableListOf<Pair<String, String>>()
     var listConnectedAccountsCalls: Int = 0
 
     override suspend fun startConnection(): String = startConnectionUrl
 
-    override suspend fun finishConnection(code: String, state: String): List<ConnectedAccount> = accounts
+    override suspend fun finishConnection(code: String, state: String): List<ConnectedAccount> {
+        finishConnectionCalls += code to state
+        return accounts
+    }
 
     override suspend fun listConnectedAccounts(): List<ConnectedAccount> {
         listConnectedAccountsCalls += 1
