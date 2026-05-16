@@ -10,6 +10,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
+import androidx.compose.foundation.layout.padding
 import androidx.compose.ui.platform.LocalContext
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
@@ -87,8 +88,9 @@ fun MetaMediaSaverApp(
 
                 androidx.compose.material3.Scaffold(
                     snackbarHost = { SnackbarHost(snackbarHostState) },
-                ) { _ ->
+                ) { innerPadding ->
                     HomeScreen(
+                        modifier = Modifier.padding(innerPadding),
                         state = homeState,
                         onConnect = homeViewModel::startConnection,
                         onRefreshAccounts = homeViewModel::loadAccounts,
