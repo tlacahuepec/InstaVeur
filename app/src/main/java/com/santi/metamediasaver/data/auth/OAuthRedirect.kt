@@ -9,7 +9,9 @@ import java.net.URLDecoder
  */
 sealed interface OAuthRedirect {
     data class Success(val code: String, val state: String) : OAuthRedirect
+
     data class Error(val message: String) : OAuthRedirect
+
     object Malformed : OAuthRedirect
 }
 

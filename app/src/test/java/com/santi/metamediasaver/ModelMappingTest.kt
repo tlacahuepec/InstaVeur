@@ -26,17 +26,18 @@ class ModelMappingTest {
 
     @Test
     fun fileNamesAreSanitized() {
-        val item = MediaItem(
-            id = "1789:bad/id",
-            accountId = "account",
-            caption = null,
-            mediaType = MediaType.VIDEO,
-            mediaUrl = "https://example.com/video.mp4",
-            thumbnailUrl = null,
-            permalink = null,
-            sourceType = SourceType.INSTAGRAM,
-            timestamp = null
-        )
+        val item =
+            MediaItem(
+                id = "1789:bad/id",
+                accountId = "account",
+                caption = null,
+                mediaType = MediaType.VIDEO,
+                mediaUrl = "https://example.com/video.mp4",
+                thumbnailUrl = null,
+                permalink = null,
+                sourceType = SourceType.INSTAGRAM,
+                timestamp = null,
+            )
 
         val name = DownloadFileNamer.suggestedFileName(item)
 

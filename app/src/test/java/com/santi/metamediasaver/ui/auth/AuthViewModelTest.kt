@@ -34,60 +34,64 @@ class AuthViewModelTest {
     }
 
     @Test
-    fun submit_blank_email_password_sets_error() = runTest {
-        val viewModel = AuthViewModel(FakeAuthRepository())
+    fun submit_blank_email_password_sets_error() =
+        runTest {
+            val viewModel = AuthViewModel(FakeAuthRepository())
 
-        viewModel.submit()
+            viewModel.submit()
 
-        assertEquals("Email and password are required.", viewModel.uiState.value.error)
-    }
-
-    @Test
-    fun create_mode_without_username_sets_error() = runTest {
-        val viewModel = AuthViewModel(FakeAuthRepository())
-        viewModel.updateEmail("user@example.com")
-        viewModel.updatePassword("secret123")
-        viewModel.setCreateMode(true)
-
-        viewModel.submit()
-
-        assertEquals("Choose a username for your app profile.", viewModel.uiState.value.error)
-    }
+            assertEquals("Email and password are required.", viewModel.uiState.value.error)
+        }
 
     @Test
-    fun sign_in_success_clears_password() = runTest {
-        val repo = FakeAuthRepository()
-        val viewModel = AuthViewModel(repo)
-        viewModel.updateEmail("user@example.com")
-        viewModel.updatePassword("secret123")
+    fun create_mode_without_username_sets_error() =
+        runTest {
+            val viewModel = AuthViewModel(FakeAuthRepository())
+            viewModel.updateEmail("user@example.com")
+            viewModel.updatePassword("secret123")
+            viewModel.setCreateMode(true)
 
-        viewModel.submit()
-        advanceUntilIdle()
+            viewModel.submit()
 
-        assertEquals("user@example.com" to "secret123", repo.signInArgs)
-        assertEquals("", viewModel.uiState.value.password)
-        assertFalse(viewModel.uiState.value.isSubmitting)
-        assertNull(viewModel.uiState.value.error)
-    }
+            assertEquals("Choose a username for your app profile.", viewModel.uiState.value.error)
+        }
 
     @Test
-    fun sign_in_failure_sets_error() = runTest {
-        val repo = FakeAuthRepository(signInError = IllegalStateException("Wrong credentials"))
-        val viewModel = AuthViewModel(repo)
-        viewModel.updateEmail("user@example.com")
-        viewModel.updatePassword("wrong")
+    fun sign_in_success_clears_password() =
+        runTest {
+            val repo = FakeAuthRepository()
+            val viewModel = AuthViewModel(repo)
+            viewModel.updateEmail("user@example.com")
+            viewModel.updatePassword("secret123")
 
-        viewModel.submit()
-        advanceUntilIdle()
+            viewModel.submit()
+            advanceUntilIdle()
 
-        assertTrue(repo.signInCalled)
-        assertEquals("Wrong credentials", viewModel.uiState.value.error)
-        assertFalse(viewModel.uiState.value.isSubmitting)
-    }
+            assertEquals("user@example.com" to "secret123", repo.signInArgs)
+            assertEquals("", viewModel.uiState.value.password)
+            assertFalse(viewModel.uiState.value.isSubmitting)
+            assertNull(viewModel.uiState.value.error)
+        }
+
+    @Test
+    fun sign_in_failure_sets_error() =
+        runTest {
+            val repo = FakeAuthRepository(signInError = IllegalStateException("Wrong credentials"))
+            val viewModel = AuthViewModel(repo)
+            viewModel.updateEmail("user@example.com")
+            viewModel.updatePassword("wrong")
+
+            viewModel.submit()
+            advanceUntilIdle()
+
+            assertTrue(repo.signInCalled)
+            assertEquals("Wrong credentials", viewModel.uiState.value.error)
+            assertFalse(viewModel.uiState.value.isSubmitting)
+        }
 }
 
 private class FakeAuthRepository(
-    private val signInError: Throwable? = null
+    private val signInError: Throwable? = null,
 ) : AuthRepository {
     private val current = MutableStateFlow<AuthUser?>(null)
 
@@ -96,13 +100,20 @@ private class FakeAuthRepository(
 
     override val currentUser: Flow<AuthUser?> = current
 
-    override suspend fun signIn(email: String, password: String) {
+    override suspend fun signIn(
+        email: String,
+        password: String,
+    ) {
         signInCalled = true
         signInArgs = email to password
         signInError?.let { throw it }
     }
 
-    override suspend fun signUp(username: String, email: String, password: String) = Unit
+    override suspend fun signUp(
+        username: String,
+        email: String,
+        password: String,
+    ) = Unit
 
     override suspend fun signOut() = Unit
 }
