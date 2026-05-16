@@ -27,13 +27,13 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.santi.metamediasaver.ui.theme.MetaMediaSaverTheme
 
@@ -45,43 +45,45 @@ fun AuthScreen(
     onUsernameChange: (String) -> Unit,
     onModeChange: (Boolean) -> Unit,
     onSubmit: () -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
 ) {
     Scaffold(modifier = modifier) { padding ->
         Box(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(padding)
-                .padding(horizontal = 24.dp),
-            contentAlignment = Alignment.Center
+            modifier =
+                Modifier
+                    .fillMaxSize()
+                    .padding(padding)
+                    .padding(horizontal = 24.dp),
+            contentAlignment = Alignment.Center,
         ) {
             Column(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .verticalScroll(rememberScrollState()),
-                verticalArrangement = Arrangement.spacedBy(18.dp)
+                modifier =
+                    Modifier
+                        .fillMaxWidth()
+                        .verticalScroll(rememberScrollState()),
+                verticalArrangement = Arrangement.spacedBy(18.dp),
             ) {
                 Icon(
                     imageVector = Icons.Outlined.PhotoLibrary,
                     contentDescription = null,
-                    tint = MaterialTheme.colorScheme.primary
+                    tint = MaterialTheme.colorScheme.primary,
                 )
                 Text(
                     text = "Meta Media Saver",
                     style = MaterialTheme.typography.headlineMedium,
-                    fontWeight = FontWeight.Bold
+                    fontWeight = FontWeight.Bold,
                 )
 
                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                     FilterChip(
                         selected = !state.createMode,
                         onClick = { onModeChange(false) },
-                        label = { Text("Sign in") }
+                        label = { Text("Sign in") },
                     )
                     FilterChip(
                         selected = state.createMode,
                         onClick = { onModeChange(true) },
-                        label = { Text("Create account") }
+                        label = { Text("Create account") },
                     )
                 }
 
@@ -93,7 +95,7 @@ fun AuthScreen(
                         leadingIcon = { Icon(Icons.Outlined.Person, contentDescription = null) },
                         label = { Text("Username") },
                         singleLine = true,
-                        keyboardOptions = KeyboardOptions(imeAction = ImeAction.Next)
+                        keyboardOptions = KeyboardOptions(imeAction = ImeAction.Next),
                     )
                 }
 
@@ -103,10 +105,11 @@ fun AuthScreen(
                     modifier = Modifier.fillMaxWidth(),
                     label = { Text("Email") },
                     singleLine = true,
-                    keyboardOptions = KeyboardOptions(
-                        keyboardType = KeyboardType.Email,
-                        imeAction = ImeAction.Next
-                    )
+                    keyboardOptions =
+                        KeyboardOptions(
+                            keyboardType = KeyboardType.Email,
+                            imeAction = ImeAction.Next,
+                        ),
                 )
 
                 OutlinedTextField(
@@ -117,23 +120,24 @@ fun AuthScreen(
                     label = { Text("Password") },
                     singleLine = true,
                     visualTransformation = PasswordVisualTransformation(),
-                    keyboardOptions = KeyboardOptions(
-                        keyboardType = KeyboardType.Password,
-                        imeAction = ImeAction.Done
-                    ),
-                    keyboardActions = KeyboardActions(onDone = { onSubmit() })
+                    keyboardOptions =
+                        KeyboardOptions(
+                            keyboardType = KeyboardType.Password,
+                            imeAction = ImeAction.Done,
+                        ),
+                    keyboardActions = KeyboardActions(onDone = { onSubmit() }),
                 )
 
                 state.error?.let { message ->
                     Surface(
                         color = MaterialTheme.colorScheme.error.copy(alpha = 0.12f),
                         contentColor = MaterialTheme.colorScheme.error,
-                        shape = MaterialTheme.shapes.small
+                        shape = MaterialTheme.shapes.small,
                     ) {
                         Text(
                             text = message,
                             modifier = Modifier.padding(12.dp),
-                            style = MaterialTheme.typography.bodyMedium
+                            style = MaterialTheme.typography.bodyMedium,
                         )
                     }
                 }
@@ -141,7 +145,7 @@ fun AuthScreen(
                 Button(
                     onClick = onSubmit,
                     enabled = !state.isSubmitting,
-                    modifier = Modifier.fillMaxWidth()
+                    modifier = Modifier.fillMaxWidth(),
                 ) {
                     Text(if (state.createMode) "Create account" else "Sign in")
                 }
@@ -161,14 +165,15 @@ fun AuthScreen(
 private fun AuthScreenSignInPreview() {
     MetaMediaSaverTheme {
         AuthScreen(
-            state = AuthUiState(
-                email = "preview@example.com"
-            ),
+            state =
+                AuthUiState(
+                    email = "preview@example.com",
+                ),
             onEmailChange = {},
             onPasswordChange = {},
             onUsernameChange = {},
             onModeChange = {},
-            onSubmit = {}
+            onSubmit = {},
         )
     }
 }
@@ -178,16 +183,17 @@ private fun AuthScreenSignInPreview() {
 private fun AuthScreenCreatePreview() {
     MetaMediaSaverTheme {
         AuthScreen(
-            state = AuthUiState(
-                email = "preview@example.com",
-                username = "preview_user",
-                createMode = true
-            ),
+            state =
+                AuthUiState(
+                    email = "preview@example.com",
+                    username = "preview_user",
+                    createMode = true,
+                ),
             onEmailChange = {},
             onPasswordChange = {},
             onUsernameChange = {},
             onModeChange = {},
-            onSubmit = {}
+            onSubmit = {},
         )
     }
 }

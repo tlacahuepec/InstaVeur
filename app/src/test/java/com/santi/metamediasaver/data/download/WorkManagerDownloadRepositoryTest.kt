@@ -13,111 +13,120 @@ import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertNull
+import org.junit.Assert.assertThrows
 import org.junit.Test
 import java.util.UUID
-import kotlin.test.assertFailsWith
 
 class WorkManagerDownloadRepositoryTest {
     @Test
-    fun enqueue_valid_media_creates_work() = runTest {
-        val scheduler = FakeDownloadWorkScheduler()
-        val repository = WorkManagerDownloadRepository(scheduler)
+    fun enqueue_valid_media_creates_work() =
+        runTest {
+            val scheduler = FakeDownloadWorkScheduler()
+            val repository = WorkManagerDownloadRepository(scheduler)
 
-        val workId = repository.enqueue(validMediaItem())
+            val workId = repository.enqueue(validMediaItem())
 
-        assertNotNull(workId)
-        assertEquals(1, scheduler.enqueued.size)
-        assertEquals("download-media-1", scheduler.enqueued.single().name)
-        assertEquals(ExistingWorkPolicy.REPLACE, scheduler.enqueued.single().policy)
-    }
-
-    @Test
-    fun retry_without_url_returns_null() = runTest {
-        val scheduler = FakeDownloadWorkScheduler()
-        val repository = WorkManagerDownloadRepository(scheduler)
-
-        val result = repository.retry(
-            DownloadRecord(
-                workId = UUID.randomUUID().toString(),
-                mediaId = "media-1",
-                title = "Title",
-                state = DownloadState.FAILED,
-                progress = 0,
-                localUri = null,
-                error = "network",
-                retryUrl = null,
-                retryMediaType = MediaType.IMAGE
-            )
-        )
-
-        assertNull(result)
-        assertEquals(0, scheduler.enqueued.size)
-    }
-
-    @Test
-    fun retry_with_url_enqueues_work() = runTest {
-        val scheduler = FakeDownloadWorkScheduler()
-        val repository = WorkManagerDownloadRepository(scheduler)
-
-        val result = repository.retry(
-            DownloadRecord(
-                workId = UUID.randomUUID().toString(),
-                mediaId = "media-2",
-                title = "Retry Title",
-                state = DownloadState.FAILED,
-                progress = 0,
-                localUri = null,
-                error = "network",
-                retryUrl = "https://example.com/retry.jpg",
-                retryMediaType = MediaType.IMAGE
-            )
-        )
-
-        assertNotNull(result)
-        assertEquals(1, scheduler.enqueued.size)
-        assertEquals("download-media-2", scheduler.enqueued.single().name)
-    }
-
-    @Test
-    fun cancel_calls_workmanager() = runTest {
-        val scheduler = FakeDownloadWorkScheduler()
-        val repository = WorkManagerDownloadRepository(scheduler)
-        val workId = UUID.randomUUID()
-
-        repository.cancel(workId.toString())
-
-        assertEquals(listOf(workId), scheduler.cancelled)
-    }
-
-    @Test
-    fun enqueue_without_media_url_throws() = runTest {
-        val scheduler = FakeDownloadWorkScheduler()
-        val repository = WorkManagerDownloadRepository(scheduler)
-
-        assertFailsWith<IllegalStateException> {
-            repository.enqueue(validMediaItem().copy(mediaUrl = null))
+            assertNotNull(workId)
+            assertEquals(1, scheduler.enqueued.size)
+            assertEquals("download-media-1", scheduler.enqueued.single().name)
+            assertEquals(ExistingWorkPolicy.REPLACE, scheduler.enqueued.single().policy)
         }
-        assertEquals(0, scheduler.enqueued.size)
-    }
 
-    private fun validMediaItem() = MediaItem(
-        id = "media-1",
-        accountId = "account-1",
-        caption = null,
-        mediaType = MediaType.IMAGE,
-        mediaUrl = "https://example.com/image.jpg",
-        thumbnailUrl = null,
-        permalink = null,
-        sourceType = SourceType.INSTAGRAM,
-        timestamp = null
-    )
+    @Test
+    fun retry_without_url_returns_null() =
+        runTest {
+            val scheduler = FakeDownloadWorkScheduler()
+            val repository = WorkManagerDownloadRepository(scheduler)
+
+            val result =
+                repository.retry(
+                    DownloadRecord(
+                        workId = UUID.randomUUID().toString(),
+                        mediaId = "media-1",
+                        title = "Title",
+                        state = DownloadState.FAILED,
+                        progress = 0,
+                        localUri = null,
+                        error = "network",
+                        retryUrl = null,
+                        retryMediaType = MediaType.IMAGE,
+                    ),
+                )
+
+            assertNull(result)
+            assertEquals(0, scheduler.enqueued.size)
+        }
+
+    @Test
+    fun retry_with_url_enqueues_work() =
+        runTest {
+            val scheduler = FakeDownloadWorkScheduler()
+            val repository = WorkManagerDownloadRepository(scheduler)
+
+            val result =
+                repository.retry(
+                    DownloadRecord(
+                        workId = UUID.randomUUID().toString(),
+                        mediaId = "media-2",
+                        title = "Retry Title",
+                        state = DownloadState.FAILED,
+                        progress = 0,
+                        localUri = null,
+                        error = "network",
+                        retryUrl = "https://example.com/retry.jpg",
+                        retryMediaType = MediaType.IMAGE,
+                    ),
+                )
+
+            assertNotNull(result)
+            assertEquals(1, scheduler.enqueued.size)
+            assertEquals("download-media-2", scheduler.enqueued.single().name)
+        }
+
+    @Test
+    fun cancel_calls_workmanager() =
+        runTest {
+            val scheduler = FakeDownloadWorkScheduler()
+            val repository = WorkManagerDownloadRepository(scheduler)
+            val workId = UUID.randomUUID()
+
+            repository.cancel(workId.toString())
+
+            assertEquals(listOf(workId), scheduler.cancelled)
+        }
+
+    @Test
+    fun enqueue_without_media_url_throws() =
+        runTest {
+            val scheduler = FakeDownloadWorkScheduler()
+            val repository = WorkManagerDownloadRepository(scheduler)
+            val item = validMediaItem().copy(mediaUrl = null)
+
+            assertThrows(IllegalStateException::class.java) {
+                kotlinx.coroutines.runBlocking { repository.enqueue(item) }
+            }
+            assertEquals(0, scheduler.enqueued.size)
+        }
+
+    private fun validMediaItem() =
+        MediaItem(
+            id = "media-1",
+            accountId = "account-1",
+            caption = null,
+            mediaType = MediaType.IMAGE,
+            mediaUrl = "https://example.com/image.jpg",
+            thumbnailUrl = null,
+            permalink = null,
+            sourceType = SourceType.INSTAGRAM,
+            timestamp = null,
+        )
 }
 
 private class FakeDownloadWorkScheduler : WorkScheduler {
     data class EnqueuedWork(
         val name: String,
         val policy: ExistingWorkPolicy,
-        val request: OneTimeWorkRequest
+        val request: OneTimeWorkRequest,
     )
 
     val enqueued = mutableListOf<EnqueuedWork>()
@@ -125,7 +134,11 @@ private class FakeDownloadWorkScheduler : WorkScheduler {
 
     override fun getWorkInfosByTagLiveData(tag: String) = MutableLiveData<List<WorkInfo>>(emptyList())
 
-    override fun enqueueUniqueWork(name: String, policy: ExistingWorkPolicy, request: OneTimeWorkRequest) {
+    override fun enqueueUniqueWork(
+        name: String,
+        policy: ExistingWorkPolicy,
+        request: OneTimeWorkRequest,
+    ) {
         enqueued += EnqueuedWork(name, policy, request)
     }
 

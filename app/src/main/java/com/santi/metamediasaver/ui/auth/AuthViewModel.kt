@@ -18,14 +18,15 @@ data class AuthUiState(
     val username: String = "",
     val createMode: Boolean = false,
     val isSubmitting: Boolean = false,
-    val error: String? = null
+    val error: String? = null,
 )
 
 class AuthViewModel(
-    private val authRepository: AuthRepository
+    private val authRepository: AuthRepository,
 ) : ViewModel() {
-    val currentUser: StateFlow<AuthUser?> = authRepository.currentUser
-        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), null)
+    val currentUser: StateFlow<AuthUser?> =
+        authRepository.currentUser
+            .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), null)
 
     private val _uiState = MutableStateFlow(AuthUiState())
     val uiState: StateFlow<AuthUiState> = _uiState.asStateFlow()
@@ -70,7 +71,7 @@ class AuthViewModel(
                 _uiState.update {
                     it.copy(
                         isSubmitting = false,
-                        error = error.message ?: "Authentication failed."
+                        error = error.message ?: "Authentication failed.",
                     )
                 }
             }.onSuccess {

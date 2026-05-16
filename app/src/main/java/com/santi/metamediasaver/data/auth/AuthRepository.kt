@@ -17,57 +17,78 @@ import kotlinx.coroutines.tasks.await
 interface AuthRepository {
     val currentUser: Flow<AuthUser?>
 
-    suspend fun signIn(email: String, password: String)
-    suspend fun signUp(username: String, email: String, password: String)
+    suspend fun signIn(
+        email: String,
+        password: String,
+    )
+
+    suspend fun signUp(
+        username: String,
+        email: String,
+        password: String,
+    )
+
     suspend fun signOut()
 }
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class FirebaseAuthRepository(
     private val auth: FirebaseAuth = FirebaseAuth.getInstance(),
-    private val firestore: FirebaseFirestore = FirebaseFirestore.getInstance()
+    private val firestore: FirebaseFirestore = FirebaseFirestore.getInstance(),
 ) : AuthRepository {
-    private val firebaseUserFlow: Flow<FirebaseUser?> = callbackFlow {
-        val listener = FirebaseAuth.AuthStateListener { firebaseAuth ->
-            trySend(firebaseAuth.currentUser)
-        }
-        auth.addAuthStateListener(listener)
-        awaitClose { auth.removeAuthStateListener(listener) }
-    }
-
-    override val currentUser: Flow<AuthUser?> = firebaseUserFlow.flatMapLatest { user ->
-        if (user == null) {
-            flowOf(null)
-        } else {
-            callbackFlow {
-                val registration = profileDocument(user.uid).addSnapshotListener { snapshot, error ->
-                    if (error != null) {
-                        trySend(user.toAuthUser())
-                        return@addSnapshotListener
-                    }
-
-                    val username = snapshot?.getString("username")
-                        ?: user.email?.substringBefore('@')
-                        ?: "user"
-                    trySend(
-                        AuthUser(
-                            uid = user.uid,
-                            email = user.email.orEmpty(),
-                            username = username
-                        )
-                    )
+    private val firebaseUserFlow: Flow<FirebaseUser?> =
+        callbackFlow {
+            val listener =
+                FirebaseAuth.AuthStateListener { firebaseAuth ->
+                    trySend(firebaseAuth.currentUser)
                 }
+            auth.addAuthStateListener(listener)
+            awaitClose { auth.removeAuthStateListener(listener) }
+        }
 
-                awaitClose { registration.remove() }
+    override val currentUser: Flow<AuthUser?> =
+        firebaseUserFlow.flatMapLatest { user ->
+            if (user == null) {
+                flowOf(null)
+            } else {
+                callbackFlow {
+                    val registration =
+                        profileDocument(user.uid).addSnapshotListener { snapshot, error ->
+                            if (error != null) {
+                                trySend(user.toAuthUser())
+                                return@addSnapshotListener
+                            }
+
+                            val username =
+                                snapshot?.getString("username")
+                                    ?: user.email?.substringBefore('@')
+                                    ?: "user"
+                            trySend(
+                                AuthUser(
+                                    uid = user.uid,
+                                    email = user.email.orEmpty(),
+                                    username = username,
+                                ),
+                            )
+                        }
+
+                    awaitClose { registration.remove() }
+                }
             }
         }
-    }
 
-    override suspend fun signIn(email: String, password: String) {
+    override suspend fun signIn(
+        email: String,
+        password: String,
+    ) {
         auth.signInWithEmailAndPassword(email.trim(), password).await()
     }
 
-    override suspend fun signUp(username: String, email: String, password: String) {
+    override suspend fun signUp(
+        username: String,
+        email: String,
+        password: String,
+    ) {
         val trimmedEmail = email.trim()
         val authResult = auth.createUserWithEmailAndPassword(trimmedEmail, password).await()
         val user = checkNotNull(authResult.user) { "Firebase did not return a user." }
@@ -78,9 +99,9 @@ class FirebaseAuthRepository(
                 "username" to cleanUsername,
                 "email" to trimmedEmail,
                 "createdAt" to FieldValue.serverTimestamp(),
-                "updatedAt" to FieldValue.serverTimestamp()
+                "updatedAt" to FieldValue.serverTimestamp(),
             ),
-            SetOptions.merge()
+            SetOptions.merge(),
         ).await()
     }
 
@@ -92,9 +113,10 @@ class FirebaseAuthRepository(
         firestore.collection("users").document(uid)
             .collection("profile").document("main")
 
-    private fun FirebaseUser.toAuthUser(): AuthUser = AuthUser(
-        uid = uid,
-        email = email.orEmpty(),
-        username = email?.substringBefore('@') ?: "user"
-    )
+    private fun FirebaseUser.toAuthUser(): AuthUser =
+        AuthUser(
+            uid = uid,
+            email = email.orEmpty(),
+            username = email?.substringBefore('@') ?: "user",
+        )
 }

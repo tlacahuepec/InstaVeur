@@ -23,98 +23,102 @@ import java.io.File
 
 class MediaDownloadWorker(
     appContext: Context,
-    params: WorkerParameters
+    params: WorkerParameters,
 ) : CoroutineWorker(appContext, params) {
-    private val client = OkHttpClient.Builder()
-        .followRedirects(true)
-        .followSslRedirects(true)
-        .build()
+    private val client =
+        OkHttpClient.Builder()
+            .followRedirects(true)
+            .followSslRedirects(true)
+            .build()
 
-    override suspend fun doWork(): Result = withContext(Dispatchers.IO) {
-        val mediaId = inputData.getString(KEY_MEDIA_ID).orEmpty()
-        val originalUrl = inputData.getString(KEY_MEDIA_URL).orEmpty()
-        val fileName = inputData.getString(KEY_FILE_NAME).orEmpty()
-        val mediaType = MediaType.fromWire(inputData.getString(KEY_MEDIA_TYPE))
+    override suspend fun doWork(): Result =
+        withContext(Dispatchers.IO) {
+            val mediaId = inputData.getString(KEY_MEDIA_ID).orEmpty()
+            val originalUrl = inputData.getString(KEY_MEDIA_URL).orEmpty()
+            val fileName = inputData.getString(KEY_FILE_NAME).orEmpty()
+            val mediaType = MediaType.fromWire(inputData.getString(KEY_MEDIA_TYPE))
 
-        if (mediaId.isBlank() || originalUrl.isBlank() || fileName.isBlank()) {
-            return@withContext Result.failure(errorData("Missing download input."))
-        }
-
-        setProgress(progressData(0))
-
-        try {
-            val localUri = tryDownload(originalUrl, mediaType, fileName)
-            Result.success(
-                outputData(
-                    localUri = localUri.toString(),
-                    mediaId = mediaId,
-                    mediaUrl = originalUrl,
-                    mediaType = mediaType,
-                    fileName = fileName
-                )
-            )
-        } catch (httpError: HttpDownloadException) {
-            val refreshedUrl = if (httpError.statusCode == 401 || httpError.statusCode == 403) {
-                refreshMediaUrl(mediaId)
-            } else {
-                null
+            if (mediaId.isBlank() || originalUrl.isBlank() || fileName.isBlank()) {
+                return@withContext Result.failure(errorData("Missing download input."))
             }
 
-            if (!refreshedUrl.isNullOrBlank() && refreshedUrl != originalUrl) {
-                try {
-                    val localUri = tryDownload(refreshedUrl, mediaType, fileName)
-                    return@withContext Result.success(
-                        outputData(
-                            localUri = localUri.toString(),
-                            mediaId = mediaId,
-                            mediaUrl = refreshedUrl,
-                            mediaType = mediaType,
-                            fileName = fileName
+            setProgress(progressData(0))
+
+            try {
+                val localUri = tryDownload(originalUrl, mediaType, fileName)
+                Result.success(
+                    outputData(
+                        localUri = localUri.toString(),
+                        mediaId = mediaId,
+                        mediaUrl = originalUrl,
+                        mediaType = mediaType,
+                        fileName = fileName,
+                    ),
+                )
+            } catch (httpError: HttpDownloadException) {
+                val refreshedUrl =
+                    if (httpError.statusCode == 401 || httpError.statusCode == 403) {
+                        refreshMediaUrl(mediaId)
+                    } else {
+                        null
+                    }
+
+                if (!refreshedUrl.isNullOrBlank() && refreshedUrl != originalUrl) {
+                    try {
+                        val localUri = tryDownload(refreshedUrl, mediaType, fileName)
+                        return@withContext Result.success(
+                            outputData(
+                                localUri = localUri.toString(),
+                                mediaId = mediaId,
+                                mediaUrl = refreshedUrl,
+                                mediaType = mediaType,
+                                fileName = fileName,
+                            ),
                         )
-                    )
-                } catch (retryError: Exception) {
-                    return@withContext Result.failure(
-                        errorData(
-                            retryError.message ?: "Download failed after refreshing the URL.",
-                            mediaId,
-                            refreshedUrl,
-                            mediaType,
-                            fileName
+                    } catch (retryError: Exception) {
+                        return@withContext Result.failure(
+                            errorData(
+                                retryError.message ?: "Download failed after refreshing the URL.",
+                                mediaId,
+                                refreshedUrl,
+                                mediaType,
+                                fileName,
+                            ),
                         )
-                    )
+                    }
                 }
-            }
 
-            val message = "Download failed with HTTP ${httpError.statusCode}."
-            if (httpError.statusCode in 500..599 && runAttemptCount < 2) {
-                Result.retry()
-            } else {
-                Result.failure(errorData(message, mediaId, originalUrl, mediaType, fileName))
-            }
-        } catch (error: Exception) {
-            Result.failure(
-                errorData(
-                    error.message ?: "Download failed.",
-                    mediaId,
-                    originalUrl,
-                    mediaType,
-                    fileName
+                val message = "Download failed with HTTP ${httpError.statusCode}."
+                if (httpError.statusCode in 500..599 && runAttemptCount < 2) {
+                    Result.retry()
+                } else {
+                    Result.failure(errorData(message, mediaId, originalUrl, mediaType, fileName))
+                }
+            } catch (error: Exception) {
+                Result.failure(
+                    errorData(
+                        error.message ?: "Download failed.",
+                        mediaId,
+                        originalUrl,
+                        mediaType,
+                        fileName,
+                    ),
                 )
-            )
+            }
         }
-    }
 
     private suspend fun tryDownload(
         mediaUrl: String,
         mediaType: MediaType,
-        fileName: String
+        fileName: String,
     ): Uri {
-        val response = client.newCall(
-            Request.Builder()
-                .url(mediaUrl)
-                .get()
-                .build()
-        ).execute()
+        val response =
+            client.newCall(
+                Request.Builder()
+                    .url(mediaUrl)
+                    .get()
+                    .build(),
+            ).execute()
 
         response.use { openedResponse ->
             if (!openedResponse.isSuccessful) {
@@ -126,7 +130,7 @@ class MediaDownloadWorker(
                 response = openedResponse,
                 mediaType = mediaType,
                 fileName = fileName,
-                contentLength = body.contentLength()
+                contentLength = body.contentLength(),
             )
         }
     }
@@ -135,26 +139,28 @@ class MediaDownloadWorker(
         response: Response,
         mediaType: MediaType,
         fileName: String,
-        contentLength: Long
+        contentLength: Long,
     ): Uri {
         val resolver = applicationContext.contentResolver
         val collectionUri = collectionUri(mediaType)
-        val values = ContentValues().apply {
-            put(MediaStore.MediaColumns.DISPLAY_NAME, fileName)
-            put(MediaStore.MediaColumns.MIME_TYPE, mediaType.mimeType)
+        val values =
+            ContentValues().apply {
+                put(MediaStore.MediaColumns.DISPLAY_NAME, fileName)
+                put(MediaStore.MediaColumns.MIME_TYPE, mediaType.mimeType)
 
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
-                put(MediaStore.MediaColumns.RELATIVE_PATH, relativePath(mediaType))
-                put(MediaStore.MediaColumns.IS_PENDING, 1)
-            } else {
-                @Suppress("DEPRECATION")
-                put(MediaStore.MediaColumns.DATA, legacyFile(mediaType, fileName).absolutePath)
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+                    put(MediaStore.MediaColumns.RELATIVE_PATH, relativePath(mediaType))
+                    put(MediaStore.MediaColumns.IS_PENDING, 1)
+                } else {
+                    @Suppress("DEPRECATION")
+                    put(MediaStore.MediaColumns.DATA, legacyFile(mediaType, fileName).absolutePath)
+                }
             }
-        }
 
-        val uri = checkNotNull(resolver.insert(collectionUri, values)) {
-            "Could not create a gallery entry."
-        }
+        val uri =
+            checkNotNull(resolver.insert(collectionUri, values)) {
+                "Could not create a gallery entry."
+            }
 
         try {
             val body = checkNotNull(response.body) { "Server returned an empty response." }
@@ -169,9 +175,10 @@ class MediaDownloadWorker(
                         output.write(buffer, 0, read)
                         downloaded += read
                         if (contentLength > 0) {
-                            val percent = ((downloaded * 100) / contentLength)
-                                .coerceIn(0, 100)
-                                .toInt()
+                            val percent =
+                                ((downloaded * 100) / contentLength)
+                                    .coerceIn(0, 100)
+                                    .toInt()
                             setProgress(progressData(percent))
                         }
                         read = input.read(buffer)
@@ -194,11 +201,12 @@ class MediaDownloadWorker(
     }
 
     private fun collectionUri(mediaType: MediaType): Uri {
-        val volume = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
-            MediaStore.VOLUME_EXTERNAL_PRIMARY
-        } else {
-            "external"
-        }
+        val volume =
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+                MediaStore.VOLUME_EXTERNAL_PRIMARY
+            } else {
+                "external"
+            }
 
         return when (mediaType) {
             MediaType.VIDEO -> MediaStore.Video.Media.getContentUri(volume)
@@ -206,64 +214,72 @@ class MediaDownloadWorker(
         }
     }
 
-    private fun relativePath(mediaType: MediaType): String = when (mediaType) {
-        MediaType.VIDEO -> "${Environment.DIRECTORY_MOVIES}/Meta Media Saver"
-        else -> "${Environment.DIRECTORY_PICTURES}/Meta Media Saver"
-    }
+    private fun relativePath(mediaType: MediaType): String =
+        when (mediaType) {
+            MediaType.VIDEO -> "${Environment.DIRECTORY_MOVIES}/Meta Media Saver"
+            else -> "${Environment.DIRECTORY_PICTURES}/Meta Media Saver"
+        }
 
     @Suppress("DEPRECATION")
-    private fun legacyFile(mediaType: MediaType, fileName: String): File {
-        val root = when (mediaType) {
-            MediaType.VIDEO -> Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_MOVIES)
-            else -> Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_PICTURES)
-        }
+    private fun legacyFile(
+        mediaType: MediaType,
+        fileName: String,
+    ): File {
+        val root =
+            when (mediaType) {
+                MediaType.VIDEO -> Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_MOVIES)
+                else -> Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_PICTURES)
+            }
         val directory = File(root, "Meta Media Saver")
         directory.mkdirs()
         return File(directory, fileName)
     }
 
-    private suspend fun refreshMediaUrl(mediaId: String): String? = runCatching {
-        val result = FirebaseFunctions.getInstance()
-            .getHttpsCallable("refreshMediaUrl")
-            .call(mapOf(KEY_MEDIA_ID to mediaId))
-            .await()
-            .data
+    private suspend fun refreshMediaUrl(mediaId: String): String? =
+        runCatching {
+            val result =
+                FirebaseFunctions.getInstance()
+                    .getHttpsCallable("refreshMediaUrl")
+                    .call(mapOf(KEY_MEDIA_ID to mediaId))
+                    .await()
+                    .data
 
-        val map = result as? Map<*, *>
-        map?.get("mediaUrl")?.toString()?.takeIf { it.isNotBlank() }
-    }.getOrNull()
+            val map = result as? Map<*, *>
+            map?.get("mediaUrl")?.toString()?.takeIf { it.isNotBlank() }
+        }.getOrNull()
 
-    private fun progressData(progress: Int): Data =
-        Data.Builder().putInt(KEY_PROGRESS, progress).build()
+    private fun progressData(progress: Int): Data = Data.Builder().putInt(KEY_PROGRESS, progress).build()
 
     private fun outputData(
         localUri: String,
         mediaId: String,
         mediaUrl: String,
         mediaType: MediaType,
-        fileName: String
-    ): Data = Data.Builder()
-        .putString(KEY_LOCAL_URI, localUri)
-        .putString(KEY_MEDIA_ID, mediaId)
-        .putString(KEY_MEDIA_URL, mediaUrl)
-        .putString(KEY_MEDIA_TYPE, mediaType.name)
-        .putString(KEY_FILE_NAME, fileName)
-        .putInt(KEY_PROGRESS, 100)
-        .build()
+        fileName: String,
+    ): Data =
+        Data.Builder()
+            .putString(KEY_LOCAL_URI, localUri)
+            .putString(KEY_MEDIA_ID, mediaId)
+            .putString(KEY_MEDIA_URL, mediaUrl)
+            .putString(KEY_MEDIA_TYPE, mediaType.name)
+            .putString(KEY_FILE_NAME, fileName)
+            .putInt(KEY_PROGRESS, 100)
+            .build()
 
     private fun errorData(
         message: String,
         mediaId: String? = inputData.getString(KEY_MEDIA_ID),
         mediaUrl: String? = inputData.getString(KEY_MEDIA_URL),
         mediaType: MediaType = MediaType.fromWire(inputData.getString(KEY_MEDIA_TYPE)),
-        fileName: String? = inputData.getString(KEY_FILE_NAME)
-    ): Data = Data.Builder()
-        .putString(KEY_ERROR, message)
-        .putString(KEY_MEDIA_ID, mediaId)
-        .putString(KEY_MEDIA_URL, mediaUrl)
-        .putString(KEY_MEDIA_TYPE, mediaType.name)
-        .putString(KEY_FILE_NAME, fileName)
-        .build()
+        fileName: String? = inputData.getString(KEY_FILE_NAME),
+    ): Data =
+        Data.Builder()
+            .putString(KEY_ERROR, message)
+            .putString(KEY_MEDIA_ID, mediaId)
+            .putString(KEY_MEDIA_URL, mediaUrl)
+            .putString(KEY_MEDIA_TYPE, mediaType.name)
+            .putString(KEY_FILE_NAME, fileName)
+            .build()
 
     private class HttpDownloadException(val statusCode: Int) : RuntimeException()
 
