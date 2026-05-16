@@ -21,7 +21,7 @@ class MainActivity : ComponentActivity() {
         setContent {
             MetaMediaSaverApp(
                 appContainer = appContainer,
-                deepLinks = deepLinks
+                deepLinks = deepLinks,
             )
         }
 

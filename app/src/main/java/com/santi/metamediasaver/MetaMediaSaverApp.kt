@@ -24,15 +24,17 @@ import com.santi.metamediasaver.ui.theme.MetaMediaSaverTheme
 fun MetaMediaSaverApp(
     appContainer: AppContainer,
     deepLinks: DeepLinkFlow,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
 ) {
     MetaMediaSaverTheme {
         Surface(modifier = modifier) {
-            val authViewModel: AuthViewModel = viewModel(
-                factory = SimpleViewModelFactory {
-                    AuthViewModel(appContainer.authRepository)
-                }
-            )
+            val authViewModel: AuthViewModel =
+                viewModel(
+                    factory =
+                        SimpleViewModelFactory {
+                            AuthViewModel(appContainer.authRepository)
+                        },
+                )
             val authState by authViewModel.uiState.collectAsStateWithLifecycle()
             val currentUser by authViewModel.currentUser.collectAsStateWithLifecycle()
 
@@ -44,19 +46,21 @@ fun MetaMediaSaverApp(
                     onPasswordChange = authViewModel::updatePassword,
                     onUsernameChange = authViewModel::updateUsername,
                     onModeChange = authViewModel::setCreateMode,
-                    onSubmit = authViewModel::submit
+                    onSubmit = authViewModel::submit,
                 )
             } else {
-                val homeViewModel: HomeViewModel = viewModel(
-                    key = user.uid,
-                    factory = SimpleViewModelFactory {
-                        HomeViewModel(
-                            user = user,
-                            metaRepository = appContainer.metaRepository,
-                            downloadRepository = appContainer.downloadRepository
-                        )
-                    }
-                )
+                val homeViewModel: HomeViewModel =
+                    viewModel(
+                        key = user.uid,
+                        factory =
+                            SimpleViewModelFactory {
+                                HomeViewModel(
+                                    user = user,
+                                    metaRepository = appContainer.metaRepository,
+                                    downloadRepository = appContainer.downloadRepository,
+                                )
+                            },
+                    )
                 val homeState by homeViewModel.state.collectAsStateWithLifecycle()
                 val snackbarHostState = remember { SnackbarHostState() }
                 val context = LocalContext.current
@@ -72,8 +76,8 @@ fun MetaMediaSaverApp(
                                 context.startActivity(
                                     Intent(
                                         Intent.ACTION_VIEW,
-                                        Uri.parse(event.url)
-                                    )
+                                        Uri.parse(event.url),
+                                    ),
                                 )
                             }
                             is HomeEvent.Message -> snackbarHostState.showSnackbar(event.text)
@@ -82,7 +86,7 @@ fun MetaMediaSaverApp(
                 }
 
                 androidx.compose.material3.Scaffold(
-                    snackbarHost = { SnackbarHost(snackbarHostState) }
+                    snackbarHost = { SnackbarHost(snackbarHostState) },
                 ) { _ ->
                     HomeScreen(
                         state = homeState,
@@ -95,7 +99,7 @@ fun MetaMediaSaverApp(
                         onDownload = homeViewModel::download,
                         onRetryDownload = homeViewModel::retry,
                         onCancelDownload = homeViewModel::cancel,
-                        onSignOut = authViewModel::signOut
+                        onSignOut = authViewModel::signOut,
                     )
                 }
             }

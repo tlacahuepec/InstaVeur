@@ -31,7 +31,7 @@ data class HomeUiState(
     val isLoadingMedia: Boolean = false,
     val isLoadingMore: Boolean = false,
     val isConnecting: Boolean = false,
-    val error: String? = null
+    val error: String? = null,
 ) {
     val selectedAccount: ConnectedAccount?
         get() = accounts.firstOrNull { it.id == selectedAccountId }
@@ -39,13 +39,14 @@ data class HomeUiState(
 
 sealed interface HomeEvent {
     data class OpenAuthorizationUrl(val url: String) : HomeEvent
+
     data class Message(val text: String) : HomeEvent
 }
 
 class HomeViewModel(
     user: AuthUser,
     private val metaRepository: MetaRepository,
-    private val downloadRepository: DownloadRepository
+    private val downloadRepository: DownloadRepository,
 ) : ViewModel() {
     private val _state = MutableStateFlow(HomeUiState(user = user))
     val state: StateFlow<HomeUiState> = _state.asStateFlow()
@@ -67,15 +68,16 @@ class HomeViewModel(
             _state.update { it.copy(isLoadingAccounts = true, error = null) }
             runCatching { metaRepository.listConnectedAccounts() }
                 .onSuccess { accounts ->
-                    val selectedId = state.value.selectedAccountId
-                        ?.takeIf { id -> accounts.any { it.id == id } }
-                        ?: accounts.firstOrNull()?.id
+                    val selectedId =
+                        state.value.selectedAccountId
+                            ?.takeIf { id -> accounts.any { it.id == id } }
+                            ?: accounts.firstOrNull()?.id
 
                     _state.update {
                         it.copy(
                             accounts = accounts,
                             selectedAccountId = selectedId,
-                            isLoadingAccounts = false
+                            isLoadingAccounts = false,
                         )
                     }
 
@@ -89,7 +91,7 @@ class HomeViewModel(
                     _state.update {
                         it.copy(
                             isLoadingAccounts = false,
-                            error = error.message ?: "Could not load connected accounts."
+                            error = error.message ?: "Could not load connected accounts.",
                         )
                     }
                 }
@@ -103,7 +105,7 @@ class HomeViewModel(
                 selectedAccountId = accountId,
                 media = emptyList(),
                 nextCursor = null,
-                error = null
+                error = null,
             )
         }
         refreshMedia()
@@ -117,7 +119,7 @@ class HomeViewModel(
                     isLoadingMedia = true,
                     media = emptyList(),
                     nextCursor = null,
-                    error = null
+                    error = null,
                 )
             }
             runCatching { metaRepository.listMedia(accountId) }
@@ -126,7 +128,7 @@ class HomeViewModel(
                         it.copy(
                             media = page.items,
                             nextCursor = page.nextCursor,
-                            isLoadingMedia = false
+                            isLoadingMedia = false,
                         )
                     }
                 }
@@ -134,7 +136,7 @@ class HomeViewModel(
                     _state.update {
                         it.copy(
                             isLoadingMedia = false,
-                            error = error.message ?: "Could not load media."
+                            error = error.message ?: "Could not load media.",
                         )
                     }
                 }
@@ -155,7 +157,7 @@ class HomeViewModel(
                         it.copy(
                             media = it.media + page.items,
                             nextCursor = page.nextCursor,
-                            isLoadingMore = false
+                            isLoadingMore = false,
                         )
                     }
                 }
@@ -163,7 +165,7 @@ class HomeViewModel(
                     _state.update {
                         it.copy(
                             isLoadingMore = false,
-                            error = error.message ?: "Could not load more media."
+                            error = error.message ?: "Could not load more media.",
                         )
                     }
                 }
@@ -182,7 +184,7 @@ class HomeViewModel(
                     _state.update {
                         it.copy(
                             isConnecting = false,
-                            error = error.message ?: "Could not start Meta connection."
+                            error = error.message ?: "Could not start Meta connection.",
                         )
                     }
                 }
@@ -205,7 +207,10 @@ class HomeViewModel(
         }
     }
 
-    private fun finishConnection(code: String, stateParam: String) {
+    private fun finishConnection(
+        code: String,
+        stateParam: String,
+    ) {
         viewModelScope.launch {
             _state.update { it.copy(isConnecting = true, error = null) }
             runCatching { metaRepository.finishConnection(code, stateParam) }
@@ -215,7 +220,7 @@ class HomeViewModel(
                         it.copy(
                             accounts = accounts,
                             selectedAccountId = selectedId,
-                            isConnecting = false
+                            isConnecting = false,
                         )
                     }
                     _events.emit(HomeEvent.Message("Meta account connected."))
@@ -225,7 +230,7 @@ class HomeViewModel(
                     _state.update {
                         it.copy(
                             isConnecting = false,
-                            error = failure.message ?: "Could not finish Meta connection."
+                            error = failure.message ?: "Could not finish Meta connection.",
                         )
                     }
                 }
@@ -270,8 +275,8 @@ class HomeViewModel(
             val id = downloadRepository.retry(record)
             _events.emit(
                 HomeEvent.Message(
-                    if (id == null) "No retry URL is available." else "Retry queued."
-                )
+                    if (id == null) "No retry URL is available." else "Retry queued.",
+                ),
             )
         }
     }

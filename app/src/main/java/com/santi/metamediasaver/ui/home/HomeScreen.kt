@@ -89,19 +89,20 @@ fun HomeScreen(
     onRetryDownload: (DownloadRecord) -> Unit,
     onCancelDownload: (DownloadRecord) -> Unit,
     onSignOut: () -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
 ) {
     val context = LocalContext.current
     var pendingDownload by remember { mutableStateOf<MediaItem?>(null) }
-    val permissionLauncher = rememberLauncherForActivityResult(
-        ActivityResultContracts.RequestPermission()
-    ) { granted ->
-        val item = pendingDownload
-        pendingDownload = null
-        if (granted && item != null) {
-            onDownload(item)
+    val permissionLauncher =
+        rememberLauncherForActivityResult(
+            ActivityResultContracts.RequestPermission(),
+        ) { granted ->
+            val item = pendingDownload
+            pendingDownload = null
+            if (granted && item != null) {
+                onDownload(item)
+            }
         }
-    }
 
     fun downloadWithPermission(item: MediaItem) {
         if (needsLegacyWritePermission(context)) {
@@ -123,7 +124,7 @@ fun HomeScreen(
                             text = state.user.username,
                             style = MaterialTheme.typography.labelMedium,
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
-                            maxLines = 1
+                            maxLines = 1,
                         )
                     }
                 },
@@ -135,23 +136,25 @@ fun HomeScreen(
                         Icon(Icons.AutoMirrored.Outlined.Logout, contentDescription = "Sign out")
                     }
                 },
-                colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = MaterialTheme.colorScheme.background
-                )
+                colors =
+                    TopAppBarDefaults.topAppBarColors(
+                        containerColor = MaterialTheme.colorScheme.background,
+                    ),
             )
-        }
+        },
     ) { padding ->
         Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(padding)
+            modifier =
+                Modifier
+                    .fillMaxSize()
+                    .padding(padding),
         ) {
             AccountBar(
                 state = state,
                 onConnect = onConnect,
                 onSelectAccount = onSelectAccount,
                 onDisconnect = onDisconnect,
-                onRefreshMedia = onRefreshMedia
+                onRefreshMedia = onRefreshMedia,
             )
 
             if (state.error != null) {
@@ -159,9 +162,10 @@ fun HomeScreen(
             }
 
             Box(
-                modifier = Modifier
-                    .weight(1f)
-                    .fillMaxWidth()
+                modifier =
+                    Modifier
+                        .weight(1f)
+                        .fillMaxWidth(),
             ) {
                 when {
                     state.isLoadingMedia || state.isLoadingAccounts -> {
@@ -180,7 +184,7 @@ fun HomeScreen(
                             isLoadingMore = state.isLoadingMore,
                             onLoadMore = onLoadMore,
                             onDownload = ::downloadWithPermission,
-                            modifier = Modifier.fillMaxSize()
+                            modifier = Modifier.fillMaxSize(),
                         )
                     }
                 }
@@ -189,7 +193,7 @@ fun HomeScreen(
             DownloadQueue(
                 downloads = state.downloads,
                 onRetry = onRetryDownload,
-                onCancel = onCancelDownload
+                onCancel = onCancelDownload,
             )
         }
     }
@@ -201,24 +205,25 @@ private fun AccountBar(
     onConnect: () -> Unit,
     onSelectAccount: (String) -> Unit,
     onDisconnect: () -> Unit,
-    onRefreshMedia: () -> Unit
+    onRefreshMedia: () -> Unit,
 ) {
     Column(
-        modifier = Modifier
-            .fillMaxWidth()
-            .background(MaterialTheme.colorScheme.surface)
-            .padding(horizontal = 16.dp, vertical = 10.dp),
-        verticalArrangement = Arrangement.spacedBy(10.dp)
+        modifier =
+            Modifier
+                .fillMaxWidth()
+                .background(MaterialTheme.colorScheme.surface)
+                .padding(horizontal = 16.dp, vertical = 10.dp),
+        verticalArrangement = Arrangement.spacedBy(10.dp),
     ) {
         Row(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically
+            verticalAlignment = Alignment.CenterVertically,
         ) {
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 Button(
                     onClick = onConnect,
-                    enabled = !state.isConnecting
+                    enabled = !state.isConnecting,
                 ) {
                     Icon(Icons.Outlined.Link, contentDescription = null)
                     Spacer(modifier = Modifier.width(8.dp))
@@ -226,7 +231,7 @@ private fun AccountBar(
                 }
                 OutlinedButton(
                     onClick = onRefreshMedia,
-                    enabled = state.selectedAccountId != null && !state.isLoadingMedia
+                    enabled = state.selectedAccountId != null && !state.isLoadingMedia,
                 ) {
                     Icon(Icons.Outlined.Refresh, contentDescription = null)
                     Spacer(modifier = Modifier.width(8.dp))
@@ -236,7 +241,7 @@ private fun AccountBar(
 
             IconButton(
                 onClick = onDisconnect,
-                enabled = state.selectedAccountId != null
+                enabled = state.selectedAccountId != null,
             ) {
                 Icon(Icons.Outlined.Delete, contentDescription = "Disconnect selected account")
             }
@@ -252,9 +257,9 @@ private fun AccountBar(
                             Text(
                                 text = account.label,
                                 maxLines = 1,
-                                overflow = TextOverflow.Ellipsis
+                                overflow = TextOverflow.Ellipsis,
                             )
-                        }
+                        },
                     )
                 }
             }
@@ -265,17 +270,17 @@ private fun AccountBar(
 @Composable
 private fun EmptyAccounts(
     onConnect: () -> Unit,
-    isConnecting: Boolean
+    isConnecting: Boolean,
 ) {
     Box(
         modifier = Modifier.fillMaxSize(),
-        contentAlignment = Alignment.Center
+        contentAlignment = Alignment.Center,
     ) {
         Column(horizontalAlignment = Alignment.CenterHorizontally) {
             Text(
                 text = "No connected accounts",
                 style = MaterialTheme.typography.titleLarge,
-                fontWeight = FontWeight.SemiBold
+                fontWeight = FontWeight.SemiBold,
             )
             Spacer(modifier = Modifier.height(16.dp))
             Button(onClick = onConnect, enabled = !isConnecting) {
@@ -291,13 +296,13 @@ private fun EmptyAccounts(
 private fun EmptyMedia(onRefreshMedia: () -> Unit) {
     Box(
         modifier = Modifier.fillMaxSize(),
-        contentAlignment = Alignment.Center
+        contentAlignment = Alignment.Center,
     ) {
         Column(horizontalAlignment = Alignment.CenterHorizontally) {
             Icon(
                 imageVector = Icons.Outlined.VideoLibrary,
                 contentDescription = null,
-                tint = MaterialTheme.colorScheme.onSurfaceVariant
+                tint = MaterialTheme.colorScheme.onSurfaceVariant,
             )
             Spacer(modifier = Modifier.height(12.dp))
             Text("No media found", style = MaterialTheme.typography.titleMedium)
@@ -316,14 +321,14 @@ private fun ErrorBand(message: String) {
     Surface(
         color = MaterialTheme.colorScheme.error.copy(alpha = 0.1f),
         contentColor = MaterialTheme.colorScheme.error,
-        modifier = Modifier.fillMaxWidth()
+        modifier = Modifier.fillMaxWidth(),
     ) {
         Text(
             text = message,
             modifier = Modifier.padding(horizontal = 16.dp, vertical = 10.dp),
             style = MaterialTheme.typography.bodyMedium,
             maxLines = 3,
-            overflow = TextOverflow.Ellipsis
+            overflow = TextOverflow.Ellipsis,
         )
     }
 }
@@ -335,19 +340,19 @@ private fun MediaGrid(
     isLoadingMore: Boolean,
     onLoadMore: () -> Unit,
     onDownload: (MediaItem) -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
 ) {
     LazyVerticalGrid(
         modifier = modifier,
         columns = GridCells.Adaptive(minSize = 170.dp),
         contentPadding = PaddingValues(12.dp),
         horizontalArrangement = Arrangement.spacedBy(12.dp),
-        verticalArrangement = Arrangement.spacedBy(12.dp)
+        verticalArrangement = Arrangement.spacedBy(12.dp),
     ) {
         items(media, key = { it.id }) { item ->
             MediaCard(
                 item = item,
-                onDownload = { onDownload(item) }
+                onDownload = { onDownload(item) },
             )
         }
 
@@ -356,7 +361,7 @@ private fun MediaGrid(
                 Button(
                     onClick = onLoadMore,
                     enabled = !isLoadingMore,
-                    modifier = Modifier.fillMaxWidth()
+                    modifier = Modifier.fillMaxWidth(),
                 ) {
                     Text(if (isLoadingMore) "Loading" else "Load more")
                 }
@@ -368,64 +373,67 @@ private fun MediaGrid(
 @Composable
 private fun MediaCard(
     item: MediaItem,
-    onDownload: () -> Unit
+    onDownload: () -> Unit,
 ) {
     ElevatedCard(
         shape = RoundedCornerShape(8.dp),
-        colors = CardDefaults.elevatedCardColors(
-            containerColor = MaterialTheme.colorScheme.surface
-        )
+        colors =
+            CardDefaults.elevatedCardColors(
+                containerColor = MaterialTheme.colorScheme.surface,
+            ),
     ) {
         Box {
             AsyncImage(
                 model = item.previewUrl,
                 contentDescription = item.caption,
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .aspectRatio(1f)
-                    .clip(RoundedCornerShape(topStart = 8.dp, topEnd = 8.dp))
-                    .background(MaterialTheme.colorScheme.surfaceVariant),
-                contentScale = ContentScale.Crop
+                modifier =
+                    Modifier
+                        .fillMaxWidth()
+                        .aspectRatio(1f)
+                        .clip(RoundedCornerShape(topStart = 8.dp, topEnd = 8.dp))
+                        .background(MaterialTheme.colorScheme.surfaceVariant),
+                contentScale = ContentScale.Crop,
             )
 
             if (item.mediaType == MediaType.VIDEO) {
                 AssistChip(
-                    modifier = Modifier
-                        .align(Alignment.TopStart)
-                        .padding(8.dp),
+                    modifier =
+                        Modifier
+                            .align(Alignment.TopStart)
+                            .padding(8.dp),
                     onClick = {},
                     label = { Text("Video") },
                     leadingIcon = {
                         Icon(Icons.Outlined.PlayCircle, contentDescription = null)
-                    }
+                    },
                 )
             }
         }
 
         Column(
             modifier = Modifier.padding(10.dp),
-            verticalArrangement = Arrangement.spacedBy(8.dp)
+            verticalArrangement = Arrangement.spacedBy(8.dp),
         ) {
             Text(
                 text = item.caption?.takeIf { it.isNotBlank() } ?: item.sourceType.name.lowercase(),
                 style = MaterialTheme.typography.bodyMedium,
                 maxLines = 2,
-                overflow = TextOverflow.Ellipsis
+                overflow = TextOverflow.Ellipsis,
             )
 
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
+                verticalAlignment = Alignment.CenterVertically,
             ) {
                 Text(
                     text = item.timestamp?.take(10).orEmpty(),
                     style = MaterialTheme.typography.labelMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
                 IconButton(
                     onClick = onDownload,
-                    enabled = item.downloadable
+                    enabled = item.downloadable,
                 ) {
                     Icon(Icons.Outlined.CloudDownload, contentDescription = "Download")
                 }
@@ -438,62 +446,67 @@ private fun MediaCard(
 private fun DownloadQueue(
     downloads: List<DownloadRecord>,
     onRetry: (DownloadRecord) -> Unit,
-    onCancel: (DownloadRecord) -> Unit
+    onCancel: (DownloadRecord) -> Unit,
 ) {
     if (downloads.isEmpty()) return
 
     Column(
-        modifier = Modifier
-            .fillMaxWidth()
-            .background(MaterialTheme.colorScheme.surface)
-            .padding(horizontal = 16.dp, vertical = 10.dp),
-        verticalArrangement = Arrangement.spacedBy(8.dp)
+        modifier =
+            Modifier
+                .fillMaxWidth()
+                .background(MaterialTheme.colorScheme.surface)
+                .padding(horizontal = 16.dp, vertical = 10.dp),
+        verticalArrangement = Arrangement.spacedBy(8.dp),
     ) {
         Text(
             text = "Downloads",
             style = MaterialTheme.typography.titleSmall,
-            fontWeight = FontWeight.SemiBold
+            fontWeight = FontWeight.SemiBold,
         )
 
         downloads.take(4).forEach { record ->
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(8.dp)
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
             ) {
                 Column(modifier = Modifier.weight(1f)) {
                     Text(
                         text = record.title,
                         maxLines = 1,
                         overflow = TextOverflow.Ellipsis,
-                        style = MaterialTheme.typography.bodyMedium
+                        style = MaterialTheme.typography.bodyMedium,
                     )
                     if (record.state == DownloadState.RUNNING) {
                         LinearProgressIndicator(
                             progress = { record.progress / 100f },
-                            modifier = Modifier.fillMaxWidth()
+                            modifier = Modifier.fillMaxWidth(),
                         )
                     } else {
                         Text(
                             text = record.state.name.lowercase(),
                             style = MaterialTheme.typography.labelMedium,
-                            color = if (record.state == DownloadState.FAILED) {
-                                MaterialTheme.colorScheme.error
-                            } else {
-                                MaterialTheme.colorScheme.onSurfaceVariant
-                            }
+                            color =
+                                if (record.state == DownloadState.FAILED) {
+                                    MaterialTheme.colorScheme.error
+                                } else {
+                                    MaterialTheme.colorScheme.onSurfaceVariant
+                                },
                         )
                     }
                 }
 
                 when (record.state) {
-                    DownloadState.FAILED -> IconButton(onClick = { onRetry(record) }) {
-                        Icon(Icons.Outlined.RestartAlt, contentDescription = "Retry download")
-                    }
+                    DownloadState.FAILED ->
+                        IconButton(onClick = { onRetry(record) }) {
+                            Icon(Icons.Outlined.RestartAlt, contentDescription = "Retry download")
+                        }
                     DownloadState.QUEUED,
-                    DownloadState.RUNNING -> IconButton(onClick = { onCancel(record) }) {
-                        Icon(Icons.Outlined.Cancel, contentDescription = "Cancel download")
-                    }
+                    DownloadState.RUNNING,
+                    ->
+                        IconButton(onClick = { onCancel(record) }) {
+                            Icon(Icons.Outlined.Cancel, contentDescription = "Cancel download")
+                        }
                     else -> Unit
                 }
             }
@@ -521,7 +534,7 @@ private fun HomeScreenEmptyPreview() {
             onDownload = {},
             onRetryDownload = {},
             onCancelDownload = {},
-            onSignOut = {}
+            onSignOut = {},
         )
     }
 }
@@ -541,73 +554,76 @@ private fun HomeScreenContentPreview() {
             onDownload = {},
             onRetryDownload = {},
             onCancelDownload = {},
-            onSignOut = {}
+            onSignOut = {},
         )
     }
 }
 
 private fun previewHomeState(
     hasMedia: Boolean = false,
-    hasDownloads: Boolean = false
+    hasDownloads: Boolean = false,
 ): HomeUiState {
-    val accounts = listOf(
-        ConnectedAccount(
-            id = "account_1",
-            displayName = "Preview Account",
-            username = "preview_user",
-            sourceType = SourceType.INSTAGRAM,
-            avatarUrl = null
+    val accounts =
+        listOf(
+            ConnectedAccount(
+                id = "account_1",
+                displayName = "Preview Account",
+                username = "preview_user",
+                sourceType = SourceType.INSTAGRAM,
+                avatarUrl = null,
+            ),
         )
-    )
     return HomeUiState(
         user = AuthUser(uid = "preview_uid", email = "preview@example.com", username = "preview"),
         accounts = accounts,
         selectedAccountId = accounts.first().id,
-        media = if (hasMedia) {
-            listOf(
-                MediaItem(
-                    id = "media_1",
-                    accountId = accounts.first().id,
-                    caption = "Sunset at the beach",
-                    mediaType = MediaType.IMAGE,
-                    mediaUrl = "https://example.com/full.jpg",
-                    thumbnailUrl = "https://example.com/thumb.jpg",
-                    permalink = null,
-                    sourceType = SourceType.INSTAGRAM,
-                    timestamp = "2026-04-18T10:00:00Z"
-                ),
-                MediaItem(
-                    id = "media_2",
-                    accountId = accounts.first().id,
-                    caption = "Short reel",
-                    mediaType = MediaType.VIDEO,
-                    mediaUrl = "https://example.com/video.mp4",
-                    thumbnailUrl = null,
-                    permalink = null,
-                    sourceType = SourceType.INSTAGRAM,
-                    timestamp = "2026-04-18T12:00:00Z"
+        media =
+            if (hasMedia) {
+                listOf(
+                    MediaItem(
+                        id = "media_1",
+                        accountId = accounts.first().id,
+                        caption = "Sunset at the beach",
+                        mediaType = MediaType.IMAGE,
+                        mediaUrl = "https://example.com/full.jpg",
+                        thumbnailUrl = "https://example.com/thumb.jpg",
+                        permalink = null,
+                        sourceType = SourceType.INSTAGRAM,
+                        timestamp = "2026-04-18T10:00:00Z",
+                    ),
+                    MediaItem(
+                        id = "media_2",
+                        accountId = accounts.first().id,
+                        caption = "Short reel",
+                        mediaType = MediaType.VIDEO,
+                        mediaUrl = "https://example.com/video.mp4",
+                        thumbnailUrl = null,
+                        permalink = null,
+                        sourceType = SourceType.INSTAGRAM,
+                        timestamp = "2026-04-18T12:00:00Z",
+                    ),
                 )
-            )
-        } else {
-            emptyList()
-        },
+            } else {
+                emptyList()
+            },
         nextCursor = if (hasMedia) "next_page" else null,
-        downloads = if (hasDownloads) {
-            listOf(
-                DownloadRecord(
-                    workId = "work_1",
-                    mediaId = "media_1",
-                    title = "Sunset at the beach",
-                    state = DownloadState.RUNNING,
-                    progress = 45,
-                    localUri = null,
-                    error = null,
-                    retryUrl = null,
-                    retryMediaType = MediaType.IMAGE
+        downloads =
+            if (hasDownloads) {
+                listOf(
+                    DownloadRecord(
+                        workId = "work_1",
+                        mediaId = "media_1",
+                        title = "Sunset at the beach",
+                        state = DownloadState.RUNNING,
+                        progress = 45,
+                        localUri = null,
+                        error = null,
+                        retryUrl = null,
+                        retryMediaType = MediaType.IMAGE,
+                    ),
                 )
-            )
-        } else {
-            emptyList()
-        }
+            } else {
+                emptyList()
+            },
     )
 }
