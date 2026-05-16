@@ -56,3 +56,13 @@ The app intentionally does not collect Instagram/Facebook passwords and does not
 - `app/google-services.json` is ignored so real Firebase identifiers do not get committed.
 - If `google-services.json` is absent, Gradle can still sync the project, but Firebase calls will not work at runtime.
 - Instagram API media access depends on Meta permissions, account type, and App Review approval.
+
+## CI Gates
+
+GitHub Actions workflow `.github/workflows/android-ci.yml` enforces three required checks on pull requests:
+
+- `lint`: runs `./gradlew lintDebug`
+- `unit-tests`: runs `./gradlew testDebugUnitTest`
+- `instrumentation-tests`: runs `./gradlew connectedDebugAndroidTest` on an API 34 emulator
+
+To fully block merges on failing checks, configure branch protection for your default branch and mark these three check names as **required status checks**.
