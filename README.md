@@ -1,5 +1,7 @@
 # Meta Media Saver
 
+This project follows the [Engineering Constitution](https://github.com/tlacahuepec/Constitution).
+
 Native Android MVP for signing in with a Firebase app account, connecting an official Meta account, browsing authorized own-media, and saving photos/videos to the phone gallery.
 
 ## What Is Implemented
